@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - University Finder</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body class="login-page-layout">
+
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <h1>UNIVERSITY FINDER</h1>
+                <p>Discover the top and best universities here in the Philippines!</p>
+            </div>
+            <nav>
+                <a href="Homepage.html">HOME</a> | <a href="#">ABOUT US</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <h2>LOGIN</h2>
+            <form action="Homepage_loggedin.html">
+                <div class="input-group">
+                    <label>Username:</label>
+                    <input type="text" placeholder="Enter username..." required>
+                </div>
+                <div class="input-group">
+                    <label>Password:</label>
+                    <input type="password" placeholder="Enter password..." required>
+                </div>
+                <div class="login-button-row">
+                    <button type="submit" class="btn-sign-in" >SIGN IN</button>
+                    <button type="button" class="btn-register" onclick="window.location.href='Registerpage.html'">REGISTER</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>

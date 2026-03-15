@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Finder | Philippines</title>
+    <link rel="stylesheet" href="../static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <h1>UNIVERSITY FINDER</h1>
+                <p>Discover the top and best universities here in the Philippines!</p>
+            </div>
+            <nav>
+                <a href="Loginpage.html">LOGIN</a> | <a href="#">ABOUT US</a>
+                <a href="Loginpage.html" class="user-icon"><i class="fa-regular fa-circle-user"></i></a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="search-section">
+            <div class="search-bar">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="uniSearch" placeholder="Search by name (e.g. UP, UST, DLSU)...">
+            </div>
+        </div>
+
+        <div class="filters-card">
+            <div class="filter-header"><i class="fa-solid fa-bars"></i> Filters</div>
+            <div class="dropdown-row">
+                <select id="regionFilter">
+                    <option value="">ALL REGIONS</option>
+                    <option value="NCR">NCR</option>
+                    <option value="Region VII">Region VII</option>
+                </select>
+                <select><option>TUITION</option></select>
+                <select><option>PROGRAM</option></select>
+            </div>
+        </div>
+
+        <div id="map" style="height: 500px; border-radius: 8px; border: 1px solid #ccc;"></div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // 1. Initialize Map
+        const map = L.map('map').setView([12.8797, 121.7740], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // 2. Mock University Database
+        const universities = [
+            { name: "UP Diliman", lat: 14.6533, lng: 121.0685, region: "NCR" },
+            { name: "De La Salle University", lat: 14.5648, lng: 120.9932, region: "NCR" },
+            { name: "Ateneo de Manila", lat: 14.6395, lng: 121.0781, region: "NCR" },
+            { name: "UST", lat: 14.6091, lng: 120.9896, region: "NCR" },
+            { name: "Silliman University", lat: 9.3126, lng: 123.3071, region: "Region VII" },
+            { name: "Leyte Normal University", lat: 11.237573, lng: 125.001779, region: "Region VIII" },
+            { name: "USC Cebu", lat: 10.3005, lng: 123.8984, region: "Region VII" }
+        ];
+
+        let markers = [];
+
+        function displayUniversities(filterText = "", region = "") {
+            // Clear existing markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            const filtered = universities.filter(u => {
+                const matchesText = u.name.toLowerCase().includes(filterText.toLowerCase());
+                const matchesRegion = region === "" || u.region === region;
+                return matchesText && matchesRegion;
+            });
+
+            filtered.forEach(u => {
+                const m = L.marker([u.lat, u.lng]).addTo(map).bindPopup(`<b>${u.name}</b><br>${u.region}`);
+                markers.push(m);
+            });
+        }
+
+        // 3. Event Listeners
+        document.getElementById('uniSearch').addEventListener('input', (e) => {
+            displayUniversities(e.target.value, document.getElementById('regionFilter').value);
+        });
+
+        document.getElementById('regionFilter').addEventListener('change', (e) => {
+            displayUniversities(document.getElementById('uniSearch').value, e.target.value);
+        });
+
+        // Initial Load
+        displayUniversities();
+    </script>
+</body>
+</html>
