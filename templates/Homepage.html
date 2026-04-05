@@ -46,7 +46,7 @@
 
         <div id="map" class="map-container"></div>
 
-        <div class="showing-text">Showing <span id="uniCount">3</span> universities</div>
+        <div class="showing-text">Showing <span id="uniCount">{{ universities|length }}</span> universities</div>
 
         <div class="results-grid" id="resultsGrid">
             
@@ -68,7 +68,7 @@
                 </div>
             </div>
             {% endfor %}
-            
+
         </div>
     </main>
 

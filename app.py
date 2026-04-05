@@ -50,7 +50,68 @@ def register():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('Homepage_loggedin.html')
+    all_universities = University.query.all()
+    return render_template('Homepage_loggedin.html', universities=all_universities)
+
+@app.route('/add_university', methods=['POST'])
+def add_university():
+    # 1. Grab all the text the user typed into the form
+    new_name = request.form.get('name')
+    new_location = request.form.get('location')
+    new_tuition = request.form.get('tuition')
+    new_acceptance_rate = request.form.get('acceptance_rate')
+    new_programs = request.form.get('programs')
+    new_image_url = request.form.get('image_url')
+
+    # 2. Package it into a new University Database Object
+    new_uni = University(
+        name=new_name,
+        location=new_location,
+        tuition=new_tuition,
+        acceptance_rate=new_acceptance_rate,
+        programs=new_programs,
+        image_url=new_image_url
+    )
+
+    # 3. Save it to the database!
+    db.session.add(new_uni)
+    db.session.commit()
+
+    # 4. Refresh the dashboard so the user immediately sees the new school
+    return redirect(url_for('dashboard'))
+
+@app.route('/delete_university/<int:uni_id>', methods=['POST'])
+def delete_university(uni_id):
+    # 1. Find the specific university in the database by its ID
+    uni_to_delete = University.query.get_or_404(uni_id)
+    
+    # 2. Delete it!
+    db.session.delete(uni_to_delete)
+    db.session.commit()
+    
+    # 3. Refresh the dashboard
+    return redirect(url_for('dashboard'))
+
+@app.route('/edit_university/<int:uni_id>', methods=['GET', 'POST'])
+def edit_university(uni_id):
+    # 1. Find the specific university we want to edit
+    uni_to_edit = University.query.get_or_404(uni_id)
+    
+    # 2. If the admin submits the edit form...
+    if request.method == 'POST':
+        uni_to_edit.name = request.form.get('name')
+        uni_to_edit.location = request.form.get('location')
+        uni_to_edit.tuition = request.form.get('tuition')
+        uni_to_edit.acceptance_rate = request.form.get('acceptance_rate')
+        uni_to_edit.programs = request.form.get('programs')
+        uni_to_edit.image_url = request.form.get('image_url')
+        
+        # Save the updated data to the database!
+        db.session.commit()
+        return redirect(url_for('dashboard'))
+        
+    # 3. If they just clicked the "Edit" button, show them the form with the current data
+    return render_template('Editpage.html', uni=uni_to_edit)
 
 if __name__ == "__main__":
     app.run(debug=True)

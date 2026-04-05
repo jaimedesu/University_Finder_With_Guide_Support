@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit {{ uni.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body style="background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh;">
+
+    <div class="filters-card" style="width: 500px; padding: 30px; border: 2px solid #ffc107;">
+        <h2 style="color: #ffc107; margin-bottom: 20px;">Editing: {{ uni.name }}</h2>
+        
+        <form action="{{ url_for('edit_university', uni_id=uni.id) }}" method="POST" style="display: flex; flex-direction: column; gap: 15px;">
+            <label>Name:</label>
+            <input type="text" name="name" value="{{ uni.name }}" required style="padding: 10px;">
+            
+            <label>Location:</label>
+            <input type="text" name="location" value="{{ uni.location }}" required style="padding: 10px;">
+            
+            <label>Tuition:</label>
+            <input type="text" name="tuition" value="{{ uni.tuition }}" required style="padding: 10px;">
+            
+            <label>Acceptance Rate:</label>
+            <input type="text" name="acceptance_rate" value="{{ uni.acceptance_rate }}" required style="padding: 10px;">
+            
+            <label>Programs:</label>
+            <input type="text" name="programs" value="{{ uni.programs }}" required style="padding: 10px;">
+            
+            <label>Image URL:</label>
+            <input type="url" name="image_url" value="{{ uni.image_url }}" required style="padding: 10px;">
+            
+            <button type="submit" class="btn-view-details" style="background-color: #ffc107; color: black; margin-top: 10px;">Save Updates</button>
+            <a href="{{ url_for('dashboard') }}" style="text-align: center; color: gray; margin-top: 10px; text-decoration: none;">Cancel</a>
+        </form>
+    </div>
+
+</body>
+</html>
