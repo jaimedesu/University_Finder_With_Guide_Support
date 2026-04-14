@@ -6,54 +6,81 @@
     <title>University Finder | Philippines</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
+    <!-- Header -->
     <header>
         <div class="header-container">
             <div class="logo-section">
-                <a href="Homepage_loggedin.html" style="text-decoration: none; color: inherit;"><h1>UNIVERSITY FINDER</h1></a>
+                <a class="logo-link" href="{{ url_for('dashboard') }}"><h1>UNIVERSITY FINDER</h1></a>
                 <p>Discover the top and best universities here in the Philippines!</p>
             </div>
             <nav>
-                <a href="Homepage.html">SIGN OUT</a> | <a href="#">ABOUT US</a>
-                <a href="profile_user.html" class="user-icon"><i class="fa-regular fa-circle-user"></i></a>
+                {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_menu') }}">MANAGE USERS</a> |
+                {% endif %}
+                <a href="{{ url_for('logout') }}">SIGN OUT</a> | <a href="#">ABOUT US</a>
+                <a href="{{ url_for('profile_user') }}" class="user-icon"><i class="fa-regular fa-circle-user"></i></a>
             </nav>
         </div>
     </header>
 
+    <!-- Main content -->
     <main class="container">
-        <div class="search-section">
+        <form class="search-section" method="GET" action="{{ url_for('dashboard') }}">
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="uniSearch" placeholder="Search university based on name, location, or program...">
+                <input type="text" name="search" value="{{ search }}" placeholder="Search by name, location, or program...">
             </div>
-        </div>
 
-        <div class="filters-card">
-            <div class="filter-header"><i class="fa-solid fa-bars"></i> Filters</div>
-            <div class="dropdown-row">
-                <select id="regionFilter">
-                    <option value="">REGION</option>
-                    <option value="Region VIII">Region VIII</option>
-                    <option value="NCR">NCR</option>
-                </select>
-                <select><option>TUITION</option></select>
-                <select><option>PROGRAM</option></select>
+            <div class="filters-card">
+                <div class="filter-header"><i class="fa-solid fa-bars"></i> Filters</div>
+                <div class="dropdown-row">
+                    <select class="input-basic" name="tuition">
+                        <option value="">Tuition (Any)</option>
+                        <option value="free" {% if tuition == 'free' %}selected{% endif %}>Free</option>
+                        <option value="under_30000" {% if tuition == 'under_30000' %}selected{% endif %}>Below 30,000 / year</option>
+                        <option value="between_30000_60000" {% if tuition == 'between_30000_60000' %}selected{% endif %}>30,000 - 60,000 / year</option>
+                        <option value="over_60000" {% if tuition == 'over_60000' %}selected{% endif %}>Above 60,000 / year</option>
+                    </select>
+                    <input class="input-basic" type="text" name="program" value="{{ program }}" placeholder="Program (e.g. IT)">
+                    <button class="btn-view-details" type="submit">Apply</button>
+                </div>
             </div>
-        </div>
+        </form>
 
-        <div id="map" class="map-container"></div>
+        <!-- Map (tiny JavaScript) -->
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
 
         <div class="showing-text">Showing <span id="uniCount">{{ universities|length }}</span> universities</div>
 
+        {% if session.get('is_admin') %}
+        <!-- Admin tools (add/edit/delete universities) -->
+        <div class="filters-card admin-panel">
+            <h3 class="admin-title">Admin: Manage Universities</h3>
+            <form action="{{ url_for('add_university') }}" method="POST" class="admin-form">
+                <input class="input-basic" type="text" name="name" placeholder="University name" required>
+                <input class="input-basic" type="text" name="location" placeholder="Location" required>
+                <input class="input-basic" type="text" name="tuition" placeholder="Tuition" required>
+                <input class="input-basic" type="text" name="acceptance_rate" placeholder="Acceptance rate" required>
+                <input class="input-basic" type="text" name="programs" placeholder="Programs" required>
+                <input class="input-basic" type="url" name="image_url" placeholder="Image URL" required>
+                <button class="btn-view-details admin-submit" type="submit">Add University</button>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- University cards -->
         <div class="results-grid" id="resultsGrid">
             
             {% for uni in universities %}
             <div class="uni-card-v2">
                 <div class="card-image-wrapper">
-                    <img src="{{ uni.image_url }}" alt="{{ uni.name }}">
+                    <img src="{{ uni.image_url }}" alt="{{ uni.name }}" loading="lazy">
                     <div class="rank-badge">#{{ uni.id }}</div>
                 </div>
                 <div class="card-content">
@@ -64,7 +91,14 @@
                         <p><i class="fa-solid fa-chart-line"></i> Acceptance: {{ uni.acceptance_rate }}</p>
                         <p><i class="fa-solid fa-graduation-cap"></i> {{ uni.programs }}</p>
                     </div>
-                    <button class="btn-view-details" onclick="openOverlay('{{ uni.name }}', '{{ uni.tuition }}', 'N/A', '{{ uni.location }}', '{{ uni.image_url }}', 'Top Programs: {{ uni.programs }}')">View Details</button>
+                    {% if session.get('is_admin') %}
+                    <div class="admin-card-actions">
+                        <a class="btn-view-details admin-edit" href="{{ url_for('edit_university', uni_id=uni.id) }}">Edit</a>
+                        <form action="{{ url_for('delete_university', uni_id=uni.id) }}" method="POST">
+                            <button class="btn-view-details admin-delete" type="submit">Delete</button>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -72,53 +106,22 @@
         </div>
     </main>
 
-    <div id="uniOverlay" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeOverlay()">&times;</span>
-            <div id="overlayData"></div>
-        </div>
-    </div>
-
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        
-        const map = L.map('map').setView([11.2444, 125.0033], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        
-        // (We will make these map markers dynamic later!)
-        L.marker([11.2405, 125.0035]).addTo(map).bindPopup("Leyte Normal University");
-        L.marker([11.2440, 125.0010]).addTo(map).bindPopup("UP Visayas Tacloban");
-        L.marker([11.2380, 124.9980]).addTo(map).bindPopup("EVSU");
+        const map = L.map('map').setView([11.2444, 125.0033], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-        // Your friend's updated function
-        function openOverlay(name, tuition, contact, address, img, description) {
-            const overlay = document.getElementById('uniOverlay');
-            const dataBox = document.getElementById('overlayData');
-
-            dataBox.innerHTML = `
-                <img src="${img}" class="modal-img-header">
-                <h2 class="modal-title">${name}</h2>
-                <div class="modal-info-list">
-                    <p><b><i class="fa-solid fa-location-dot"></i> Address:</b> ${address}</p>
-                    <p><b><i class="fa-solid fa-dollar-sign"></i> Tuition:</b> ${tuition}</p>
-                    <p><b><i class="fa-solid fa-phone"></i> Contact:</b> ${contact}</p>
-                </div>
-                <hr class="modal-divider">
-                <p class="modal-description">${description}</p>
-                <button class="btn-view-details" onclick="closeOverlay()">Close</button>
-            `;
-            overlay.style.display = "flex";
+        const markers = {{ map_markers|tojson }};
+        if (markers.length > 0) {
+            const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
+            map.fitBounds(bounds, { padding: [30, 30] });
         }
 
-        function closeOverlay() {
-            document.getElementById('uniOverlay').style.display = "none";
-        }
-
-        window.onclick = function(event) {
-            if (event.target == document.getElementById('uniOverlay')) {
-                closeOverlay();
-            }
-        }
+        markers.forEach(m => {
+            L.marker([m.lat, m.lng]).addTo(map).bindPopup(m.name);
+        });
     </script>
 </body>
 </html>

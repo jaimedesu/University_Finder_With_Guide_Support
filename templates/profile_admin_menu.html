@@ -15,6 +15,7 @@
         </div>
     </header>
 
+    <!-- Admin user list -->
     <div class="profile-page-wrapper">
         <div class="profile-card">
             <div class="admin-search-bar">
@@ -28,7 +29,7 @@
                     {{ user.username }} <i class="fa-solid fa-gear"></i>
                 </a>
                 {% else %}
-                <p style="text-align: center; padding: 10px;">No users found.</p>
+                <p class="empty-message">No users found.</p>
                 {% endfor %}
 
             </div>

@@ -8,6 +8,7 @@
 </head>
 <body class="login-page-layout">
 
+    <!-- Header -->
     <header>
         <div class="header-container">
             <div class="logo-section">
@@ -20,15 +21,16 @@
         </div>
     </header>
 
-    <div class="login-wrapper">
+        <!-- Register form -->
+        <div class="login-wrapper">
         <div class="login-card register-card">
             <h2>REGISTER</h2>
             
             {% with messages = get_flashed_messages() %}
               {% if messages %}
-                <div style="color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+                                <div class="flash-message">
                   {% for message in messages %}
-                    <p style="margin: 0;">{{ message }}</p>
+                                        <p>{{ message }}</p>
                   {% endfor %}
                 </div>
               {% endif %}
