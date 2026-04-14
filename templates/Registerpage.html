@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - University Finder</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="login-page-layout">
 
@@ -15,7 +15,7 @@
                 <p>Discover the top and best universities here in the Philippines!</p>
             </div>
             <nav>
-                <a href="Homepage.html">HOME</a> | <a href="#">ABOUT US</a>
+                <a href="{{ url_for('home') }}">HOME</a> | <a href="#">ABOUT US</a>
             </nav>
         </div>
     </header>
@@ -23,22 +23,33 @@
     <div class="login-wrapper">
         <div class="login-card register-card">
             <h2>REGISTER</h2>
-            <form action="Loginpage.html">
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div style="color: #dc3545; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center;">
+                  {% for message in messages %}
+                    <p style="margin: 0;">{{ message }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            <form action="{{ url_for('register') }}" method="POST">
                 <div class="input-group">
                     <label>Email:</label>
-                    <input type="email" placeholder="Enter email..." required>
+                    <input type="email" name="email" placeholder="Enter email..." required>
                 </div>
                 <div class="input-group">
                     <label>Age:</label>
-                    <input type="number" placeholder="Enter Age:" required>
+                    <input type="number" name="age" placeholder="Enter Age:" required>
                 </div>
                 <div class="input-group">
                     <label>Username:</label>
-                    <input type="text" placeholder="Enter Username..." required>
+                    <input type="text" name="username" placeholder="Enter Username..." required>
                 </div>
                 <div class="input-group">
                     <label>Password:</label>
-                    <input type="password" placeholder="Enter Password..." required>
+                    <input type="password" name="password" placeholder="Enter Password..." required>
                 </div>
                 
                 <div class="login-button-row">
@@ -47,7 +58,7 @@
 
                 <div class="form-footer">
                     <p>Already have an account? <br> 
-                       <a href="Loginpage.html">sign in here</a>
+                       <a href="{{ url_for('login') }}">sign in here</a>
                     </p>
                 </div>
             </form>

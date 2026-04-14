@@ -4,35 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit User - Admin</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-light">
     <div class="profile-page-wrapper">
         <div class="profile-card">
             <div class="profile-header">
-                <h2>PROFILE NO#:</h2>
-                <a href="profile_admin_menu.html" class="back-circle-btn"><i class="fa-solid fa-arrow-left"></i></a>
+                <h2>PROFILE NO#: {{ user.id }}</h2>
+                <a href="{{ url_for('admin_menu') }}" class="back-circle-btn"><i class="fa-solid fa-arrow-left"></i></a>
             </div>
-            <form>
+            
+            <form action="{{ url_for('admin_update_user', user_id=user.id) }}" method="POST">
                 <div class="profile-input-group">
-                    <label>NAME:</label>
-                    <input type="text" placeholder="Enter name...">
+                    <label>NAME/USERNAME:</label>
+                    <input type="text" name="username" value="{{ user.username }}" placeholder="Enter name...">
                 </div>
                 <div class="profile-input-group">
                     <label>EMAIL:</label>
-                    <input type="email" placeholder="Enter email...">
+                    <input type="email" name="email" value="{{ user.email }}" placeholder="Enter email...">
                 </div>
                 <div class="profile-input-group">
                     <label>AGE:</label>
-                    <input type="text" placeholder="Enter age...">
+                    <input type="text" name="age" value="{{ user.age }}" placeholder="Enter age...">
                 </div>
                 <div class="profile-actions">
-                    <button type="button" class="btn-cyan">Change Email</button>
+                    <button type="submit" class="btn-cyan">Update Details</button>
                     <button type="button" class="btn-red">Reset Password</button>
                 </div>
-                <button type="button" class="btn-delete">Delete User <i class="fa-solid fa-trash-can"></i></button>
+                
+                <a href="{{ url_for('admin_delete_user', user_id=user.id) }}" style="text-decoration: none;">
+                    <button type="button" class="btn-delete" style="width: 100%; margin-top: 15px;">Delete User <i class="fa-solid fa-trash-can"></i></button>
+                </a>
             </form>
+
         </div>
     </div>
 </body>
