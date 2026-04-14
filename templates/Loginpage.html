@@ -8,6 +8,7 @@
 </head>
 <body class="login-page-layout">
 
+    <!-- Header -->
     <header>
         <div class="header-container">
             <div class="logo-section">
@@ -20,9 +21,21 @@
         </div>
     </header>
 
-    <div class="login-wrapper">
+        <!-- Login form -->
+        <div class="login-wrapper">
         <div class="login-card">
             <h2>LOGIN</h2>
+            
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                                <div class="flash-message">
+                  {% for message in messages %}
+                    <p>{{ message }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
             <form action="{{ url_for('login') }}" method="POST">
                 
                 <div class="input-group">

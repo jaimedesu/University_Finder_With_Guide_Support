@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - University Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <h1>UNIVERSITY FINDER</h1>
+                <p>Discover the top and best universities here in the Philippines!</p>
+            </div>
+            <nav><a href="{{ url_for('dashboard') }}">HOME</a> | <a href="#">ABOUT US</a></nav>
+        </div>
+    </header>
+
+    <!-- User profile -->
+    <div class="profile-page-wrapper">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2>PROFILE</h2>
+                <a href="{{ url_for('dashboard') }}" class="back-circle-btn"><i class="fa-solid fa-arrow-left"></i></a>
+            </div>
+            <form>
+                <div class="profile-input-group">
+                    <label>NAME:</label>
+                    <input type="text" value="{{ user.username }}" readonly>
+                </div>
+                <div class="profile-input-group">
+                    <label>EMAIL:</label>
+                    <input type="email" value="{{ user.email }}" readonly>
+                </div>
+                <div class="profile-input-group">
+                    <label>AGE:</label>
+                    <input type="text" value="{{ user.age }}" readonly>
+                </div>
+                <div class="profile-actions">
+                    <button type="button" class="btn-cyan">Change Email</button>
+                    <button type="button" class="btn-red">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
