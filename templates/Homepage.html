@@ -6,11 +6,13 @@
     <title>University Finder | Philippines</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
 </head>
 <body>
 
-    <!-- Header -->
     <header>
         <div class="header-container">
             <div class="logo-section">
@@ -24,7 +26,6 @@
         </div>
     </header>
 
-    <!-- Main content -->
     <main class="container">
         <form class="search-section" method="GET" action="{{ url_for('home') }}">
             <div class="search-bar">
@@ -48,14 +49,12 @@
             </div>
         </form>
 
-        <!-- Map (tiny JavaScript) -->
         <div class="map-container">
             <div id="map"></div>
         </div>
 
-        <div class="showing-text">Showing <span id="uniCount">{{ universities|length }}</span> universities</div>
+        <div class="showing-text">Showing <span id="uniCount">{{ universities|length }}</span> universities on this page</div>
 
-        <!-- University cards -->
         <div class="results-grid" id="resultsGrid">
             
             {% for uni in universities %}
@@ -72,30 +71,47 @@
                         <p><i class="fa-solid fa-chart-line"></i> Acceptance: {{ uni.acceptance_rate }}</p>
                         <p><i class="fa-solid fa-graduation-cap"></i> {{ uni.programs }}</p>
                     </div>
-                    
                 </div>
             </div>
             {% endfor %}
 
         </div>
+
+        <div class="pagination-controls" style="text-align: center; margin-top: 30px;">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('home', page=pagination.prev_num, search=search, tuition=tuition, program=program) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Previous</a>
+            {% endif %}
+
+            <span style="margin: 0 15px; font-weight: bold; font-size: 14px; color: #64748b;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+
+            {% if pagination.has_next %}
+                <a href="{{ url_for('home', page=pagination.next_num, search=search, tuition=tuition, program=program) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Next</a>
+            {% endif %}
+        </div>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <script>
-        const map = L.map('map').setView([11.2444, 125.0033], 13);
+        const map = L.map('map').setView([12.8797, 121.774], 5); // Start zoomed out slightly over the PH
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
-        const markers = {{ map_markers|tojson }};
-        if (markers.length > 0) {
-            const bounds = L.latLngBounds(markers.map(m => [m.lat, m.lng]));
-            map.fitBounds(bounds, { padding: [30, 30] });
-        }
+        const markersData = {{ map_markers|tojson }};
+        const markerCluster = L.markerClusterGroup(); // Initialize the clustering
 
-        markers.forEach(m => {
-            L.marker([m.lat, m.lng]).addTo(map).bindPopup(m.name);
-        });
+        if (markersData.length > 0) {
+            markersData.forEach(m => {
+                if(m.lat && m.lng) {
+                    const marker = L.marker([m.lat, m.lng]).bindPopup(`<b>${m.name}</b>`);
+                    markerCluster.addLayer(marker);
+                }
+            });
+
+            // Add the clustered layer to the map
+            map.addLayer(markerCluster);
+        }
     </script>
 </body>
 </html>
