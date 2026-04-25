@@ -1,4 +1,5 @@
 import os
+import math
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -27,6 +28,7 @@ class University(db.Model):
     image_url = db.Column(db.String(500), nullable=False)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+    distance = None
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,8 +39,19 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
 
 # ==========================================
-# HELPER FUNCTION FOR FILTERS
+# HELPER FUNCTIONS
 # ==========================================
+def calculate_distance(lat1, lon1, lat2, lon2):
+    # Returns the distance in kilometers between two points
+    if None in (lat1, lon1, lat2, lon2):
+        return None
+    R = 6371.0 # Radius of the Earth in km
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
 def apply_filters(query, search, tuition, program):
     if search:
         query = query.filter(db.or_(
@@ -52,8 +65,19 @@ def apply_filters(query, search, tuition, program):
         if tuition == 'free':
             query = query.filter(University.tuition.ilike('%free%'))
         elif tuition == 'under_30000':
-            query = query.filter(University.tuition.ilike('%15,000%')) # Basic string match based on your JSON
+            query = query.filter(University.tuition.ilike('%15,000%'))
     return query
+
+class CustomPagination:
+    """A helper class to paginate standard Python lists since SQLAlchemy paginate doesn't work with custom sorting"""
+    def __init__(self, current_page, total_pages, items):
+        self.page = current_page
+        self.pages = total_pages
+        self.has_prev = current_page > 1
+        self.has_next = current_page < total_pages
+        self.prev_num = current_page - 1
+        self.next_num = current_page + 1
+        self.items = items
 
 # ==========================================
 # PUBLIC ROUTES
@@ -65,16 +89,38 @@ def home():
     tuition = request.args.get('tuition', '')
     program = request.args.get('program', '')
     page = request.args.get('page', 1, type=int)
+    
+    # Grab user location from the URL
+    user_lat = request.args.get('user_lat', type=float)
+    user_lng = request.args.get('user_lng', type=float)
 
     # 1. Start query and apply filters
     query = University.query
     query = apply_filters(query, search, tuition, program)
+    all_unis = query.all()
 
-    # 2. Paginate results
-    pagination = query.paginate(page=page, per_page=12, error_out=False)
-    paged_universities = pagination.items
+    # 2. Calculate distance and sort if location is provided
+    if user_lat is not None and user_lng is not None:
+        for uni in all_unis:
+            uni.distance = calculate_distance(user_lat, user_lng, uni.latitude, uni.longitude)
+        # Sort by distance (closest first)
+        all_unis.sort(key=lambda u: u.distance if u.distance is not None else float('inf'))
+    else:
+        for uni in all_unis:
+            uni.distance = None
 
-    # 3. Only grab map markers for the 12 universities visible on this specific page
+    # 3. Manually paginate the sorted list
+    total = len(all_unis)
+    pages = math.ceil(total / 12) if total > 0 else 1
+    if page < 1: page = 1
+    if page > pages: page = pages
+    
+    start = (page - 1) * 12
+    end = start + 12
+    paged_universities = all_unis[start:end]
+    pagination = CustomPagination(page, pages, paged_universities)
+
+    # 4. Only grab map markers for the visible universities
     map_markers = [
         {'name': uni.name, 'lat': uni.latitude, 'lng': uni.longitude} 
         for uni in paged_universities if uni.latitude and uni.longitude
@@ -86,7 +132,9 @@ def home():
                            map_markers=map_markers,
                            search=search,
                            tuition=tuition,
-                           program=program)
+                           program=program,
+                           user_lat=user_lat if user_lat else '',
+                           user_lng=user_lng if user_lng else '')
 
 # ==========================================
 # AUTHENTICATION ROUTES
@@ -156,16 +204,37 @@ def dashboard():
     tuition = request.args.get('tuition', '')
     program = request.args.get('program', '')
     page = request.args.get('page', 1, type=int)
+    
+    # Grab user location from the URL
+    user_lat = request.args.get('user_lat', type=float)
+    user_lng = request.args.get('user_lng', type=float)
 
     # 1. Start query and apply filters
     query = University.query
     query = apply_filters(query, search, tuition, program)
+    all_unis = query.all()
 
-    # 2. Paginate results
-    pagination = query.paginate(page=page, per_page=12, error_out=False)
-    paged_universities = pagination.items
+    # 2. Calculate distance and sort if location is provided
+    if user_lat is not None and user_lng is not None:
+        for uni in all_unis:
+            uni.distance = calculate_distance(user_lat, user_lng, uni.latitude, uni.longitude)
+        all_unis.sort(key=lambda u: u.distance if u.distance is not None else float('inf'))
+    else:
+        for uni in all_unis:
+            uni.distance = None
 
-    # 3. Only grab map markers for the 12 universities visible on this specific page
+    # 3. Manually paginate the sorted list
+    total = len(all_unis)
+    pages = math.ceil(total / 12) if total > 0 else 1
+    if page < 1: page = 1
+    if page > pages: page = pages
+    
+    start = (page - 1) * 12
+    end = start + 12
+    paged_universities = all_unis[start:end]
+    pagination = CustomPagination(page, pages, paged_universities)
+
+    # 4. Only grab map markers for the visible universities
     map_markers = [
         {'name': uni.name, 'lat': uni.latitude, 'lng': uni.longitude} 
         for uni in paged_universities if uni.latitude and uni.longitude
@@ -177,7 +246,9 @@ def dashboard():
                            map_markers=map_markers,
                            search=search,
                            tuition=tuition,
-                           program=program)
+                           program=program,
+                           user_lat=user_lat if user_lat else '',
+                           user_lng=user_lng if user_lng else '')
 
 @app.route('/profile')
 def profile_user():
