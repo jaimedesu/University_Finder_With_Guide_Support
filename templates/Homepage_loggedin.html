@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 </head>
 <body>
 
@@ -30,7 +31,10 @@
     </header>
 
     <main class="container">
-        <form class="search-section" method="GET" action="{{ url_for('dashboard') }}">
+        <form class="search-section" id="searchForm" method="GET" action="{{ url_for('dashboard') }}">
+            <input type="hidden" name="user_lat" id="user_lat" value="{{ user_lat }}">
+            <input type="hidden" name="user_lng" id="user_lng" value="{{ user_lng }}">
+
             <div class="search-bar">
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" name="search" value="{{ search }}" placeholder="Search by name, location, or program...">
@@ -43,10 +47,10 @@
                         <option value="">Tuition (Any)</option>
                         <option value="free" {% if tuition == 'free' %}selected{% endif %}>Free</option>
                         <option value="under_30000" {% if tuition == 'under_30000' %}selected{% endif %}>Below 30,000 / year</option>
-                        <option value="between_30000_60000" {% if tuition == 'between_30000_60000' %}selected{% endif %}>30,000 - 60,000 / year</option>
-                        <option value="over_60000" {% if tuition == 'over_60000' %}selected{% endif %}>Above 60,000 / year</option>
                     </select>
                     <input class="input-basic" type="text" name="program" value="{{ program }}" placeholder="Program (e.g. IT)">
+                    
+                    <button type="button" class="btn-view-details" onclick="getLocation()" style="background-color: #10b981;"><i class="fa-solid fa-location-crosshairs"></i> Near Me</button>
                     <button class="btn-view-details" type="submit">Apply</button>
                 </div>
             </div>
@@ -56,11 +60,11 @@
             <div id="map"></div>
         </div>
 
-        <div class="showing-text">Showing <span id="uniCount">{{ universities|length }}</span> universities on this page</div>
+        <div class="showing-text">Showing <span id="uniCount">{{ universities.items|length if universities.items else universities|length }}</span> universities on this page</div>
 
         <div class="results-grid" id="resultsGrid">
-            
-            {% for uni in universities %}
+            {% set uni_list = universities.items if universities.items else universities %}
+            {% for uni in uni_list %}
             <div class="uni-card-v2">
                 <div class="card-image-wrapper">
                     <img src="{{ uni.image_url }}" alt="{{ uni.name }}" loading="lazy">
@@ -70,13 +74,22 @@
                     <h3>{{ uni.name }}</h3>
                     <p class="location"><i class="fa-solid fa-location-dot"></i> {{ uni.location }}</p>
                     <div class="stats">
+                        {% if uni.distance is defined and uni.distance is not none %}
+                            <p style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-location-arrow"></i> {{ "%.1f"|format(uni.distance) }} km away</p>
+                        {% endif %}
                         <p><i class="fa-solid fa-dollar-sign"></i> {{ uni.tuition }}</p>
                         <p><i class="fa-solid fa-chart-line"></i> Acceptance: {{ uni.acceptance_rate }}</p>
                         <p><i class="fa-solid fa-graduation-cap"></i> {{ uni.programs }}</p>
                     </div>
                     
+                    {% if uni.latitude and uni.longitude %}
+                    <button onclick="drawRoute({{ uni.latitude }}, {{ uni.longitude }})" class="btn-view-details" style="background-color: #3b82f6; width: 100%; margin-top: 15px;">
+                        <i class="fa-solid fa-route"></i> Show Route
+                    </button>
+                    {% endif %}
+                    
                     {% if session.get('is_admin') %}
-                    <div class="admin-card-actions" style="margin-top: 15px; display: flex; gap: 10px;">
+                    <div class="admin-card-actions" style="margin-top: 10px; display: flex; gap: 10px;">
                         <a class="btn-view-details admin-edit" style="background-color: #f59e0b; text-align: center; flex: 1;" href="{{ url_for('edit_university', uni_id=uni.id) }}">Edit</a>
                         <form action="{{ url_for('delete_university', uni_id=uni.id) }}" method="POST" style="flex: 1; margin: 0;">
                             <button class="btn-view-details admin-delete" style="background-color: #ef4444; width: 100%;" type="submit">Delete</button>
@@ -86,43 +99,92 @@
                 </div>
             </div>
             {% endfor %}
-
         </div>
 
         <div class="pagination-controls" style="text-align: center; margin-top: 30px;">
-            {% if pagination.has_prev %}
-                <a href="{{ url_for('dashboard', page=pagination.prev_num, search=search, tuition=tuition, program=program) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Previous</a>
+            {% if pagination and pagination.has_prev %}
+                <a href="{{ url_for('dashboard', page=pagination.prev_num, search=search, tuition=tuition, program=program, user_lat=user_lat, user_lng=user_lng) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Previous</a>
             {% endif %}
-
-            <span style="margin: 0 15px; font-weight: bold; font-size: 14px; color: #64748b;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
-
-            {% if pagination.has_next %}
-                <a href="{{ url_for('dashboard', page=pagination.next_num, search=search, tuition=tuition, program=program) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Next</a>
+            {% if pagination %}
+                <span style="margin: 0 15px; font-weight: bold; font-size: 14px; color: #64748b;">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+            {% endif %}
+            {% if pagination and pagination.has_next %}
+                <a href="{{ url_for('dashboard', page=pagination.next_num, search=search, tuition=tuition, program=program, user_lat=user_lat, user_lng=user_lng) }}" class="btn-view-details" style="display: inline-block; width: auto; padding: 10px 20px;">Next</a>
             {% endif %}
         </div>
     </main>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script>
-        const map = L.map('map').setView([12.8797, 121.774], 5); // Start zoomed out slightly over the PH
+        const map = L.map('map').setView([12.8797, 121.774], 5);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
 
         const markersData = {{ map_markers|tojson }};
-        const markerCluster = L.markerClusterGroup(); // Initialize the clustering
-
+        const markerCluster = L.markerClusterGroup();
         if (markersData.length > 0) {
             markersData.forEach(m => {
                 if(m.lat && m.lng) {
-                    const marker = L.marker([m.lat, m.lng]).bindPopup(`<b>${m.name}</b>`);
-                    markerCluster.addLayer(marker);
+                    markerCluster.addLayer(L.marker([m.lat, m.lng]).bindPopup(`<b>${m.name}</b>`));
                 }
             });
-
-            // Add the clustered layer to the map
             map.addLayer(markerCluster);
+        }
+
+        // GEOLOCATION
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('user_lat').value = position.coords.latitude;
+                    document.getElementById('user_lng').value = position.coords.longitude;
+                    document.getElementById('searchForm').submit();
+                }, function(error) {
+                    alert("Please allow location access to find schools near you.");
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        // ROUTING SYSTEM
+        let currentRouteControl = null;
+
+        function drawRoute(destLat, destLng) {
+            // Grab coordinates directly from the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            let userLat = urlParams.get('user_lat');
+            let userLng = urlParams.get('user_lng');
+
+            // Make sure the user has clicked "Near Me" first
+            if (!userLat || !userLng) {
+                alert("Please click the 'Near Me' button first so we know where you are starting from!");
+                return;
+            }
+
+            // Remove previous route if they click a new school
+            if (currentRouteControl) {
+                map.removeControl(currentRouteControl);
+            }
+
+            // Draw the new route
+            currentRouteControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLat, userLng),
+                    L.latLng(destLat, destLng)
+                ],
+                routeWhileDragging: false,
+                addWaypoints: false,
+                fitSelectedRoutes: true, // Automatically zooms the map to show the whole route
+                lineOptions: {
+                    styles: [{color: '#3b82f6', opacity: 0.8, weight: 6}] // A nice blue line
+                }
+            }).addTo(map);
+
+            // Smoothly scroll the screen up to the map so they see it
+            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
 </body>
